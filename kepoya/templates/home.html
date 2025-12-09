@@ -1,1 +1,17 @@
-<!-- home.html -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>KEPOYA 🌸 - Home</title>
+<!-- Menggunakan url_for untuk memanggil file CSS -->
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="card">
+  <h1 style="color:#ff6fb0;">KEPOYA 💌</h1>
+  <button class="btn-pink" onclick="location.href='/buat'">Buat Pertanyaan ✨</button>
+</div>
+
+</body>
+</html>

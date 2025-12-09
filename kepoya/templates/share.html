@@ -1,1 +1,25 @@
-<!-- share.html -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Share Pertanyaan</title>
+<!-- Menggunakan url_for untuk memanggil file CSS -->
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<!-- Menggunakan url_for untuk memanggil file JS -->
+<script src="{{ url_for('static', filename='script.js') }}" defer></script>
+</head>
+<body>
+
+<div class="card">
+  <h2>Yeayy.. Pertanyaan Siap Dibagikan!</h2>
+  <p>💌 Link menjawab:</p>
+
+  <a id="linkJawab"></a>
+
+  <button class="btn-blue" onclick="copyText('linkJawab')">Copy Link</button>
+  <button class="btn-pink" onclick="lihatJawabanPrompt()">Lihat Jawaban 🔍</button>
+  <button class="btn-gray" onclick="location.href='/home'">Home</button>
+</div>
+
+</body>
+</html>

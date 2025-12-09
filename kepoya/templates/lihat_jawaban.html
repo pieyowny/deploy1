@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Lihat Jawaban</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+  <div class="card">
+    <h2>Cek Jawaban Masuk</h2>
+    
+    <form method="POST" style="margin-bottom: 20px;">
+      <input type="text" name="keyJawaban" placeholder="Masukkan Key Jawaban (Angka)" required />
+      <button class="btn-pink" type="submit">Lihat Jawaban 🔍</button>
+    </form>
+
+    {% if question_data %}
+        <hr>
+        <div id="hasil">
+            <p><strong>Pertanyaan:</strong></p>
+            <h3>{{ question_data.tanya }}</h3>
+            
+            <p><strong>Jawaban Teman-teman:</strong></p>
+            <ul style="text-align: left;">
+                {% for ans in question_data.jawaban %}
+                    <li style="margin-bottom: 5px; padding: 5px; background: #f9f9f9; border-radius: 4px;">{{ ans }}</li>
+                {% else %}
+                    <p><em>Belum ada jawaban nih...</em></p>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+    <button class="btn-gray" onclick="location.href='{{ url_for('home') }}'">Home</button>
+  </div>
+
+</body>
+</html>
