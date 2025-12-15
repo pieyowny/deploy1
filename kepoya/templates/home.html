@@ -3,14 +3,24 @@
 <head>
 <meta charset="UTF-8">
 <title>KEPOYA 🌸 - Home</title>
-<!-- Menggunakan url_for untuk memanggil file CSS -->
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <script>
+        // Masukkan 'state' baru, membuat /home menjadi dua kali di history
+        history.pushState(null, null, location.href); 
+        
+        // Ketika tombol 'Back' ditekan (onpopstate), paksa maju 1 langkah
+        window.onpopstate = function() {
+            history.go(1); 
+        };
+    </script>
+    
 </head>
 <body>
 
 <div class="card">
-  <h1 style="color:#ff6fb0;">KEPOYA 💌</h1>
-  <button class="btn-pink" onclick="location.href='/buat'">Buat Pertanyaan ✨</button>
+  <h1 style="color:#ff6fb0;">KEPOYA 💌</h1>
+  <button class="btn-pink" onclick="location.href='/buat'">Buat Pertanyaan ✨</button>
 </div>
 
 </body>

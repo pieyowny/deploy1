@@ -1,0 +1,28 @@
+{
+    "pertanyaan_db": {
+        "59085": {
+            "tanya": "Halo nama kamu siapa?",
+            "jawaban": []
+        },
+        "14263": {
+            "tanya": "Halo namamu siapa?",
+            "jawaban": [
+                "Namaku fio"
+            ]
+        }
+    },
+    "jawaban_db": {},
+    "progress_db": {},
+    "pertanyaana_db": {
+        "59085": {
+            "tanya": "Halo nama kamu siapa?",
+            "jawaban": []
+        },
+        "14263": {
+            "tanya": "Halo namamu siapa?",
+            "jawaban": [
+                "Namaku fio"
+            ]
+        }
+    }
+}

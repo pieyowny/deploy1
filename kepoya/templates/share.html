@@ -3,22 +3,63 @@
 <head>
 <meta charset="UTF-8">
 <title>Share Pertanyaan</title>
-<!-- Menggunakan url_for untuk memanggil file CSS -->
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-<!-- Menggunakan url_for untuk memanggil file JS -->
 <script src="{{ url_for('static', filename='script.js') }}" defer></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Ambil kode pertanyaan dari URL path
+            const pathSegments = window.location.pathname.split('/');
+            const kode = pathSegments[pathSegments.length - 1];
+
+            // 1. TAMBAH STATE untuk mendeteksi Back
+            history.pushState(null, null, location.href);
+
+            window.onpopstate = function() {
+                // 2. Tampilkan notifikasi konfirmasi
+                const confirmLogout = confirm("Apakah anda yakin ingin ke halaman sebelumnya? Sesi akses akan ditutup.");
+
+                if (confirmLogout) {
+                    // 3. Jika YAKIN, hapus sesi di server
+                    fetch(`/delete_session/${kode}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                    .then(response => {
+                        // 4. Lakukan navigasi kembali ke halaman sebelumnya
+                        window.history.back();
+                    })
+                    .catch(error => {
+                        console.error('Error saat menghapus sesi:', error);
+                        window.history.back();
+                    });
+                } else {
+                    // 5. Jika TIDAK YAKIN/DIBATALKAN, kunci tombol Back
+                    history.go(1); 
+                }
+            };
+        });
+    </script>
 </head>
 <body>
 
 <div class="card">
-  <h2>Yeayy.. Pertanyaan Siap Dibagikan!</h2>
-  <p>💌 Link menjawab:</p>
+  <h2>Yeayy.. Pertanyaan Siap Dibagikan!</h2>
+  <p>💌 Link menjawab:</p>
 
-  <a id="linkJawab"></a>
+  <a id="linkJawab" href="{{ link }}">{{ link }}</a>
+  <button class="btn-blue" onclick="copyText('linkJawab')">Copy Link</button>
 
-  <button class="btn-blue" onclick="copyText('linkJawab')">Copy Link</button>
-  <button class="btn-pink" onclick="lihatJawabanPrompt()">Lihat Jawaban 🔍</button>
-  <button class="btn-gray" onclick="location.href='/home'">Home</button>
+  <hr style="margin: 20px 0;">
+
+  <p>🔒 Akses Jawaban Anda (Khusus Pembuat Pertanyaan):</p>
+      <a href="{{ url_for('lihat_jawaban', kode=kode, token=temp_token) }}">
+    <button class="btn-pink">Lihat Jawaban Saya 🔍 (Sesi Ini Saja)</button>
+  </a>
+ 
+  <button class="btn-gray" onclick="location.href='/home'">Home</button>
 </div>
 
 </body>

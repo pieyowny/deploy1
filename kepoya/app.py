@@ -3,12 +3,22 @@ import random
 import json
 
 app = Flask(__name__)
+app.secret_key = '@o<j4AH*I+0qZ>4meUG;SuIq:1DK=Q'
 
+from flask import Flask, render_template, request, redirect, url_for, jsonify, session
+import random
+import string
 # Load database.json content
 def load_db():
     try:
         with open('database.json', 'r') as f:
-            return json.load(f)
+            data = json.load(f)
+            if 'pertanyaan_db' in data:
+                data['pertanyaana_db'] = {str(k): v for k, v in data['pertanyaan_db'].items()}
+            if 'jawaban_db' in data:
+                 data['jawaban_db'] = {str(k): v for k, v in data['jawaban_db'].items()}
+            return data
+        
     except FileNotFoundError:
         return {"pertanyaan_db": {}, "jawaban_db": {}, "progress_db": {}}
 
@@ -31,74 +41,128 @@ def home():
 @app.route('/buat', methods=['GET', 'POST'])
 def buat_pertanyaan():
     if request.method == 'POST':
-        pertanyaan = request.form['tanyaInput'].strip()
+        # Menggunakan .get() untuk keamanan
+        pertanyaan = request.form.get('tanyaInput', '').strip()
         if not pertanyaan:
             return "Pertanyaan tidak boleh kosong!", 400
 
-        # Generate unique ID and key for the question
-        kode_pertanyaan = random.randint(10000, 99999)
-        key_pertanyaan = random.randint(1000000, 9999999)
+        # Generate unique ID dan token
+        kode_pertanyaan = str(random.randint(10000, 99999))
+        temp_token = ''.join(random.choices(string.ascii_letters + string.digits, k=15))
+        
+        # Simpan token akses Lihat Jawaban ke sesi
+        session[f'answers_token_{kode_pertanyaan}'] = temp_token
 
         db = load_db()
+
+        db['pertanyaan_db'][kode_pertanyaan] = {
+            'tanya': pertanyaan, 
+            'jawaban': []
+        }
         
-        # Store the question in the database
-        db['pertanyaan_db'][kode_pertanyaan] = {'tanya': pertanyaan, 'jawaban': []}
-        db['jawaban_db'][key_pertanyaan] = {'tanya': pertanyaan, 'jawaban': []}
+        # =========================================================
+        # LOGIKA PENGUNCI (CREATOR LOCK) DITAMBAHKAN DI SINI
+        # Tandai browser ini sebagai 'pembuat' untuk mencegah menjawab
+        # =========================================================
+        session[f'creator_lock_{kode_pertanyaan}'] = True 
 
         save_db(db)
         
-        # Redirect to the page to share the question
-        return redirect(url_for('share', kode=kode_pertanyaan))
+        # Redirect ke halaman share, membawa kode dan token sesi
+        return redirect(url_for('share', kode=kode_pertanyaan, token=temp_token))
 
     return render_template('buat_pertanyaan.html')
 
 # Route to share the question link
-@app.route('/share/<int:kode>')
+@app.route('/share/<string:kode>', methods=['GET'])
 def share(kode):
+    temp_token = request.args.get('token')
     db = load_db()
+    kode = str(kode)
     if kode not in db['pertanyaan_db']:
         return "Pertanyaan tidak ditemukan", 404
 
-    question = db['pertanyaan_db'][kode]
     link = f"{request.url_root}jawab/{kode}"
-
-    return render_template('share.html', link=link)
+    
+    return render_template('share.html', 
+                           link=link,
+                           kode=kode, 
+                           temp_token=temp_token)
 
 # Route for answering a question
-@app.route('/jawab/<int:kode>', methods=['GET', 'POST'])
-def jawab(kode):
+@app.route('/jawab/<string:kode>', methods=['GET', 'POST'])
+def jawab_pertanyaan(kode):
     db = load_db()
+    kode = str(kode)
+    
+    # =========================================================
+    # 1. PEMERIKSAAN CREATOR LOCK
+    # Mencegah pembuat pertanyaan menjawab pertanyaannya sendiri
+    # =========================================================
+    if session.get(f'creator_lock_{kode}'):
+        return "Anda adalah pembuat pertanyaan ini. Silakan bagikan link ini kepada orang lain.", 403
+    
     if kode not in db['pertanyaan_db']:
         return "Pertanyaan tidak ditemukan", 404
+        
+    pertanyaan_data = db['pertanyaan_db'][kode]
 
     if request.method == 'POST':
-        jawaban = request.form['jawabanInput'].strip()
+        # Ambil data jawaban dan validasi
+        jawaban = request.form.get('jawabanInput', '').strip() 
+        
         if not jawaban:
             return "Jawaban tidak boleh kosong!", 400
 
-        # Add the answer to the question in the database
-        db['pertanyaan_db'][kode]['jawaban'].append(jawaban)
+        # Simpan jawaban
+        pertanyaan_data['jawaban'].append(jawaban)
         save_db(db)
         
-        return "Jawaban terkirim!", 200
+        # 2. REDIRECT SETELAH BERHASIL (Memberikan efek 'keluar')
+        return redirect(url_for('home'))
 
-    question = db['pertanyaan_db'][kode]
-    return render_template('jawab.html', question=question)
+    # Metode GET: Tampilkan formulir jawaban
+    # 3. PASTIKAN VARIABEL DIKIRIM KE TEMPLATE
+    return render_template(
+        'jawab_pertanyaan.html', 
+        tanya=pertanyaan_data['tanya'],
+        kode=kode
+    )
+
+    # Metode GET: Tampilkan formulir jawaban
+    return render_template(
+        'jawab_pertanyaan.html', 
+        tanya=pertanyaan_data['tanya'], # <-- PERBAIKAN: Mengirimkan teks pertanyaan
+        kode=kode                      # <-- Mengirimkan kode untuk action form HTML
+    )
 
 # Route to view answers to a question
-@app.route('/lihatjawaban', methods=['GET', 'POST'])
-def lihat_jawaban():
-    if request.method == 'POST':
-        key = request.form['keyJawaban'].strip()
-        db = load_db()
-        # Find the corresponding question by key
-        question_data = db['jawaban_db'].get(int(key), None)
-        if question_data is None:
-            return "Key tidak ditemukan!", 404
-        return render_template('lihat_jawaban.html', question_data=question_data)
+# app.py
 
-    return render_template('lihat_jawaban.html')
+@app.route('/lihatjawaban/<string:kode>/<string:token>', methods=['GET'])
+def lihat_jawaban(kode, token):
+    
+    db = load_db()
+    
+    session_key = f'answers_token_{kode}'
 
+    if session.get(session_key) == token:
+        if kode not in db['pertanyaan_db']: 
+             return "Pertanyaan tidak ditemukan", 404
+        
+        pertanyaan_data = db['pertanyaan_db'][kode]
+
+        return render_template(
+            'lihat_jawaban.html', 
+            tanya=pertanyaan_data['tanya'], 
+            jawaban=pertanyaan_data['jawaban']
+        )
+        
+    else:
+        # Akses Ditolak (hanya jika token di sesi berbeda atau sesi sudah berakhir secara alami)
+        return "Akses ditolak atau sesi telah berakhir. Anda harus membuat pertanyaan baru untuk mendapatkan akses.", 403
+    
 # Start the app
 if __name__ == '__main__':
-    app.run(debug=True)
+   app.run(debug=True, host='0.0.0.0') 
+
